@@ -96,15 +96,7 @@ MIT License - Deva Holding için geliştirilmiştir.
 
 ## 👨‍💻 Geliştirici
 
-Can Çiçek - İSG Uzmanı
-
-## 🤝 Katkıda Bulunma
-
-1. Fork edin
-2. Feature branch oluşturun (`git checkout -b feature/amazing`)
-3. Commit edin (`git commit -m 'Add amazing feature'`)
-4. Push edin (`git push origin feature/amazing`)
-5. Pull Request açın
+Can Ayçiçek - İSG Uzmanı
 
 ## 📞 Destek
 
