@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>İSG Saha Kontrol</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>📋 İSG Saha Kontrol</h1>
+            <p class="subtitle">Saha Gözlem Kayıt Sistemi</p>
+        </header>
+
+        <!-- Camera Section -->
+        <section class="camera-section" id="cameraSection">
+            <div class="camera-container">
+                <video id="cameraPreview" autoplay playsinline></video>
+                <canvas id="photoCanvas" style="display: none;"></canvas>
+                <img id="capturedPhoto" style="display: none;" alt="Çekilen Fotoğraf">
+            </div>
+
+            <div class="camera-controls">
+                <button id="startCameraBtn" class="btn btn-primary">
+                    📷 Kamerayı Aç
+                </button>
+                <button id="captureBtn" class="btn btn-success" style="display: none;">
+                    📸 Fotoğraf Çek
+                </button>
+                <button id="retakeBtn" class="btn btn-warning" style="display: none;">
+                    🔄 Yeniden Çek
+                </button>
+            </div>
+        </section>
+
+        <!-- Form Section -->
+        <section class="form-section" id="formSection" style="display: none;">
+            <h2>📝 Kontrol Bilgileri</h2>
+
+            <form id="inspectionForm">
+                <div class="form-group">
+                    <label for="kontrolTarihi">Kontrol Tarihi *</label>
+                    <input type="date" id="kontrolTarihi" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="maddeNo">Madde No *</label>
+                    <input type="text" id="maddeNo" placeholder="Otomatik oluşturulacak..." readonly required>
+                </div>
+
+                <div class="form-group">
+                    <label for="bulgular">Bulgular *</label>
+                    <textarea id="bulgular" rows="3" placeholder="Sadece gözlemlenen durumu yazınız..."
+                        required></textarea>
+                    <small class="helper-text">⚠️ Yorum yapılmadan, sadece tespit yazılmalıdır</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="alinmasiGerekenAksiyon">Alınması Gereken Aksiyon *</label>
+                    <textarea id="alinmasiGerekenAksiyon" rows="2" placeholder="Gerekli aksiyon..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="terminTarihi">Termin Tarihi *</label>
+                    <input type="date" id="terminTarihi" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="durum">Tamamlanma Durumu *</label>
+                    <select id="durum" required>
+                        <option value="Tamamlanmadı" selected>Tamamlanmadı</option>
+                        <option value="Tamamlandı">Tamamlandı</option>
+                    </select>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        ✅ Kaydet
+                    </button>
+                    <button type="button" id="cancelBtn" class="btn btn-secondary">
+                        ❌ İptal
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Records Section -->
+        <section class="records-section">
+            <div class="records-header">
+                <h2>📊 Kayıtlar (<span id="recordCount">0</span>)</h2>
+                <button id="exportExcelBtn" class="btn btn-success" style="display: none;">
+                    📥 Excel İndir
+                </button>
+            </div>
+
+            <div id="recordsList" class="records-list">
+                <p class="empty-state">Henüz kayıt yok. Fotoğraf çekerek başlayın.</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Excel Export Library -->
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
