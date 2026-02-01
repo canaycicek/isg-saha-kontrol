@@ -403,26 +403,17 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-remote-config-compat.js"></script>
+
+    <!-- Firebase Configuration -->
+    <script src="firebase-config.js"></script>
 
     <!-- Firebase Auth Manager -->
     <script src="auth-firebase.js"></script>
 
     <!-- Firebase Config & Init -->
     <script type="module">
-        // Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyAjNnt7e39kI6loOoTyb9uORR6CqUBqznc",
-            authDomain: "saha-kontrol-7a1fb.firebaseapp.com",
-            projectId: "saha-kontrol-7a1fb",
-            storageBucket: "saha-kontrol-7a1fb.firebasestorage.app",
-            messagingSenderId: "347469985700",
-            appId: "1:347469985700:web:4cf0476eaefd0a2ea63331"
-        };
-
-        // Initialize Firebase
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        // Firebase already initialized in firebase-config.js
 
         // Create global authManager instance
         window.authManager = new FirebaseAuthManager();

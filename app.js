@@ -323,6 +323,12 @@ async function analyzePhotoWithAI() {
 
         console.log('🤖 Starting AI analysis...');
 
+        // Ensure AI analyzer is initialized
+        if (!window.aiAnalyzer.initialized) {
+            console.log('⏳ AI Analyzer not ready, initializing...');
+            await window.aiAnalyzer.init();
+        }
+
         // Call AI analyzer
         const result = await window.aiAnalyzer.analyzePhoto(currentPhoto);
 
