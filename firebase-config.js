@@ -20,44 +20,8 @@
         console.log('✅ Firebase initialized');
     }
 
-    // Initialize Remote Config
-    const remoteConfig = firebase.remoteConfig();
-
-    // Set config settings
-    remoteConfig.settings = {
-        minimumFetchIntervalMillis: 3600000, // 1 hour
-        fetchTimeoutMillis: 60000, // 60 seconds
-    };
-
-    // Set default values (fallback if Remote Config fails)
-    remoteConfig.defaultConfig = {
-        'GEMINI_API_KEY': 'AIzaSyASHO1pu81Otv0iJsjox_tFpmOsOn6fGRY' // Fallback key
-    };
-
-    // Fetch and activate Remote Config
-    async function initRemoteConfig() {
-        try {
-            console.log('🔄 Fetching Remote Config...');
-            await remoteConfig.fetchAndActivate();
-            console.log('✅ Remote Config activated');
-            return true;
-        } catch (error) {
-            console.warn('⚠️ Remote Config fetch failed, using defaults:', error);
-            return false;
-        }
-    }
-
-    // Get config value
-    function getConfigValue(key) {
-        return remoteConfig.getValue(key).asString();
-    }
-
     // Make available globally
-    window.firebaseRemoteConfig = {
-        init: initRemoteConfig,
-        getValue: getConfigValue,
-        config: remoteConfig
-    };
+    window.firebaseApp = firebase.app();
 
-    console.log('✅ Firebase Remote Config module loaded');
+    console.log('✅ Firebase initialized');
 })();

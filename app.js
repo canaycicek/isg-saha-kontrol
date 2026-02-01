@@ -299,68 +299,10 @@ function capturePhoto() {
     formSection.style.display = 'block';
     formSection.scrollIntoView({ behavior: 'smooth' });
 
-    // Start AI analysis in background
-    analyzePhotoWithAI();
+
 }
 
-// Analyze photo with AI
-async function analyzePhotoWithAI() {
-    const aiLoadingDiv = document.getElementById('aiLoading');
-    const bulgularField = document.getElementById('bulgular');
-    const aksiyonField = document.getElementById('alinmasiGerekenAksiyon');
 
-    try {
-        // Show loading indicator
-        if (aiLoadingDiv) {
-            aiLoadingDiv.style.display = 'block';
-        }
-
-        // Set placeholder text
-        bulgularField.placeholder = '🤖 AI analiz ediyor...';
-        aksiyonField.placeholder = '🤖 AI analiz ediyor...';
-        bulgularField.disabled = true;
-        aksiyonField.disabled = true;
-
-        console.log('🤖 Starting AI analysis...');
-
-        // Ensure AI analyzer is initialized
-        if (!window.aiAnalyzer.initialized) {
-            console.log('⏳ AI Analyzer not ready, initializing...');
-            await window.aiAnalyzer.init();
-        }
-
-        // Call AI analyzer
-        const result = await window.aiAnalyzer.analyzePhoto(currentPhoto);
-
-        console.log('✅ AI analysis complete:', result);
-
-        // Fill form with AI results
-        bulgularField.value = result.bulgular;
-        aksiyonField.value = result.alinmasiGerekenAksiyon;
-
-        // Show success message
-        showNotification('✅ Yapay zeka analizi tamamlandı!', 'success');
-
-    } catch (error) {
-        console.error('❌ AI analysis failed:', error);
-
-        // Show error notification
-        showNotification('⚠️ AI analizi başarısız, lütfen manuel girin', 'warning');
-
-        // Set empty placeholders for manual entry
-        bulgularField.placeholder = 'Bulgular...';
-        aksiyonField.placeholder = 'Gerekli aksiyon...';
-
-    } finally {
-        // Hide loading, enable fields
-        if (aiLoadingDiv) {
-            aiLoadingDiv.style.display = 'none';
-        }
-        bulgularField.disabled = false;
-        aksiyonField.disabled = false;
-        bulgularField.focus();
-    }
-}
 
 // Show notification
 function showNotification(message, type = 'info') {
