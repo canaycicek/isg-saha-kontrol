@@ -20,7 +20,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" crossorigin href="/isg-saha-kontrol/assets/index-DjTcnhkq.css">
+  <script type="module" crossorigin src="/isg-saha-kontrol/assets/index-BWTEtJSr.js"></script>
+  <link rel="stylesheet" crossorigin href="/isg-saha-kontrol/assets/index-D76d424p.css">
 </head>
 
 <body>
@@ -28,7 +29,9 @@
     <!-- Header -->
     <header class="app-header">
       <div>
-        <h1><i class="bi bi-clipboard-data"></i> İSG Saha Kontrol</h1>
+        <h1><img src="/isg-saha-kontrol/assets/logo-BTqPt6rO.jpg"
+            style="height: 60px; width: auto; vertical-align: middle; margin-right: 12px; border-radius: 8px;"> İSG Saha
+          Kontrol</h1>
         <p class="subtitle">Saha Gözlem Kayıt Sistemi</p>
       </div>
       <div class="user-profile" id="userProfile">
@@ -136,18 +139,19 @@
   <!-- Firebase SDK (Compat Version) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 
-  <!-- AI Photo Analyzer -->
-  <script src="ai-analyzer.js"></script>
+  <!-- AI Photo Analyzer -->
 
   <!-- Excel Export Library -->
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
 
-  <!-- Authentication -->
-  <script src="auth.js"></script>
+  <!-- Firebase Authentication -->
+  <script src="auth-firebase.js"></script>
+
 
-  <!-- Main App -->
-  <script src="app.js"></script>
+  <!-- Main App -->
 </body>
 
 </html>
