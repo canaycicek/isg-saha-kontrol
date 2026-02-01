@@ -60,46 +60,113 @@
         </button>
       </div>
 
+    </section>
 
-      <!-- Firebase SDK (Compat Version) -->
-      <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-      <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-      <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-      <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <!-- Form Section -->
+    <section class="form-section" id="formSection" style="display: none;">
+      <h2>📝 Kontrol Kaydı</h2>
+      <form id="inspectionForm">
+        <div class="form-group">
+          <label for="kontrolTarihi">Kontrol Tarihi:</label>
+          <input type="date" id="kontrolTarihi" name="kontrolTarihi" required>
+        </div>
 
-      <!-- Firebase Configuration -->
-      <script src="firebase-config.js"></script>
+        <div class="form-group">
+          <label for="maddeNo">Madde No:</label>
+          <input type="text" id="maddeNo" name="maddeNo" readonly>
+          <small class="helper-text">Otomatik oluşturulur</small>
+        </div>
 
+        <div class="form-group">
+          <label for="bulgular">Bulgular:</label>
+          <textarea id="bulgular" name="bulgular" required placeholder="Tespit edilen bulgular..."></textarea>
+        </div>
 
-      <!-- Excel Export Library -->
-      <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+        <div class="form-group">
+          <label for="alinmasiGerekenAksiyon">Alınması Gereken Aksiyon:</label>
+          <textarea id="alinmasiGerekenAksiyon" name="alinmasiGerekenAksiyon" required
+            placeholder="Gerekli aksiyonlar..."></textarea>
+        </div>
 
-      <!-- Firebase Authentication -->
-      <script src="auth-firebase.js"></script>
+        <div class="form-group">
+          <label for="alinanAksiyon">Alınan Aksiyon:</label>
+          <textarea id="alinanAksiyon" name="alinanAksiyon"
+            placeholder="Gerçekleştirilen aksiyonlar (opsiyonel)..."></textarea>
+        </div>
 
-      <script type="module">
-        // Initialize Auth Manager (Firebase already initialized in firebase-config.js)
-        const authManager = new FirebaseAuthManager();
+        <div class="form-group">
+          <label for="terminTarihi">Termin Tarihi:</label>
+          <input type="date" id="terminTarihi" name="terminTarihi" required>
+        </div>
 
-        // Make it global for app.js
-        window.authManager = authManager;
+        <div class="form-group">
+          <label for="durum">Durum:</label>
+          <select id="durum" name="durum" required>
+            <option value="Tamamlanmadı">Tamamlanmadı</option>
+            <option value="Tamamlandı">Tamamlandı</option>
+          </select>
+        </div>
 
-        // Make Storage globally available
-        window.storage = firebase.storage();
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="cancelBtn">❌ İptal</button>
+          <button type="submit" class="btn btn-success">💾 Kaydet</button>
+        </div>
+      </form>
+    </section>
 
-        // 🔒 Auth Guard - Redirect to login if not authenticated
-        firebase.auth().onAuthStateChanged((user) => {
-          if (!user) {
-            console.log('🚫 No user logged in, redirecting to login...');
-            window.location.href = 'login.html';
-          } else {
-            console.log('✅ User authenticated:', user.email);
-          }
-        });
-      </script>
+    <!-- Records Section -->
+    <section class="records-section">
+      <div class="records-header">
+        <h2>📊 Kayıtlar (<span id="recordCount">0</span>)</h2>
+        <button id="exportBtn" class="btn btn-primary">
+          📥 Excel İndir
+        </button>
+      </div>
 
-      <!-- Main App -->
-      <script type="module" src="app.js"></script>
+      <div id="recordsList" class="records-list">
+        <p class="empty-state">Henüz kayıt yok. Fotoğraf çekerek başlayın.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Firebase SDK (Compat Version) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+
+  <!-- Firebase Configuration -->
+  <script src="firebase-config.js"></script>
+
+  <!-- Excel Export Library -->
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+
+  <!-- Firebase Authentication -->
+  <script src="auth-firebase.js"></script>
+
+  <script type="module">
+    // Initialize Auth Manager (Firebase already initialized in firebase-config.js)
+    const authManager = new FirebaseAuthManager();
+
+    // Make it global for app.js
+    window.authManager = authManager;
+
+    // Make Storage globally available
+    window.storage = firebase.storage();
+
+    // 🔒 Auth Guard - Redirect to login if not authenticated
+    firebase.auth().onAuthStateChanged((user) => {
+      if (!user) {
+        console.log('🚫 No user logged in, redirecting to login...');
+        window.location.href = 'login.html';
+      } else {
+        console.log('✅ User authenticated:', user.email);
+      }
+    });
+  </script>
+
+  <!-- Main App -->
+  <script type="module" src="app.js"></script>
 </body>
 
 </html>
