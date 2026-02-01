@@ -1,0 +1,22 @@
+{
+  "name": "İSG Saha Kontrol",
+  "short_name": "İSG Kontrol",
+  "description": "İSG Saha Gözlem Kayıt Sistemi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f1e",
+  "theme_color": "#1a1a2e",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%231a1a2e' width='192' height='192'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='%234a90e2'%3E📋%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%231a1a2e' width='512' height='512'/%3E%3Ctext x='256' y='320' font-size='280' text-anchor='middle' fill='%234a90e2'%3E📋%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
