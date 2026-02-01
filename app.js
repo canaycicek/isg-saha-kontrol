@@ -1,13 +1,13 @@
 // İSG Saha Kontrol - App Logic with Firebase Firestore
 
-// Firebase Configuration
+// Firebase Configuration (from environment variables)
 const firebaseConfig = {
-    apiKey: "AIzaSyAjNnt7e39kI6loOoTyb9uORR6CqUBqznc",
-    authDomain: "saha-kontrol-7a1fb.firebaseapp.com",
-    projectId: "saha-kontrol-7a1fb",
-    storageBucket: "saha-kontrol-7a1fb.firebasestorage.app",
-    messagingSenderId: "347469985700",
-    appId: "1:347469985700:web:4cf0476eaefd0a2ea63331"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Initialize Firebase

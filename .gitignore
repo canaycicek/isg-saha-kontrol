@@ -14,9 +14,29 @@ Thumbs.db
 desktop.ini
 
 # Logs
+logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+firebase-debug.log*
 
-# Temporary files
+# Firebase cache
+.firebase/
+
+# Uncomment this if you'd like others to create their own Firebase project.
+# For a team working on the same Firebase project(s), it is recommended to leave
+# it commented so all members can deploy to the same project(s) in .firebaserc.
+# .firebaserc
+
+# Environment Variables
+.env.local
+.env
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
 *.tmp
 *.temp
