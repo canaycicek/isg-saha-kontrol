@@ -1,89 +1,153 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase Hosting</title>
+<html lang="tr">
 
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/12.8.0/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/12.8.0/firebase-auth-compat.js"></script>
-    <script defer src="/__/firebase/12.8.0/firebase-database-compat.js"></script>
-    <script defer src="/__/firebase/12.8.0/firebase-firestore-compat.js"></script>
-    <script defer src="/__/firebase/12.8.0/firebase-functions-compat.js"></script>
-    <script defer src="/__/firebase/12.8.0/firebase-messaging-compat.js"></script>
-    <script defer src="/__/firebase/12.8.0/firebase-storage-compat.js"></script>
-    <script defer src="/__/firebase/12.8.0/firebase-analytics-compat.js"></script>
-    <script defer src="/__/firebase/12.8.0/firebase-remote-config-compat.js"></script>
-    <script defer src="/__/firebase/12.8.0/firebase-performance-compat.js"></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>İSG Saha Kontrol - Kayıt Sistemi</title>
 
-    <style media="screen">
-      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
-      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
-      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
-      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
-      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
-      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
-      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
-      @media (max-width: 600px) {
-        body, #message { margin-top: 0; background: white; box-shadow: none; }
-        body { border-top: 16px solid #ffa100; }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosting Setup Complete</h1>
-      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
-    </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const loadEl = document.querySelector('#load');
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        // // The Firebase SDK is initialized and available here!
-        //
-        // firebase.auth().onAuthStateChanged(user => { });
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        // firebase.analytics(); // call to activate
-        // firebase.analytics().logEvent('tutorial_completed');
-        // firebase.performance(); // call to activate
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="styles.css">
 
-        try {
-          let app = firebase.app();
-          let features = [
-            'auth', 
-            'database', 
-            'firestore',
-            'functions',
-            'messaging', 
-            'storage', 
-            'analytics', 
-            'remoteConfig',
-            'performance',
-          ].filter(feature => typeof app[feature] === 'function');
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
-        }
-      });
-    </script>
-  </body>
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="app-header">
+      <div>
+        <h1><i class="bi bi-clipboard-data"></i> İSG Saha Kontrol</h1>
+        <p class="subtitle">Saha Gözlem Kayıt Sistemi</p>
+      </div>
+      <div class="user-profile" id="userProfile">
+        <span class="user-name" id="userName"></span>
+        <span class="user-role" id="userRole"></span>
+        <button class="btn btn-secondary btn-small" id="logoutBtn">🚪 Çıkış</button>
+      </div>
+    </header>
+
+    <!-- Camera Section (Only for Admin) -->
+    <section class="camera-section" id="cameraSection" style="display: none;">
+      <div class="camera-container">
+        <video id="cameraPreview" autoplay playsinline></video>
+        <canvas id="photoCanvas" style="display: none;"></canvas>
+        <img id="capturedPhoto" style="display: none;" alt="Çekilen Fotoğraf">
+      </div>
+
+      <div class="camera-controls">
+        <button id="startCameraBtn" class="btn btn-primary">
+          📷 Kamerayı Aç
+        </button>
+        <button id="captureBtn" class="btn btn-success" style="display: none;">
+          📸 Fotoğraf Çek
+        </button>
+        <button id="retakeBtn" class="btn btn-warning" style="display: none;">
+          🔄 Yeniden Çek
+        </button>
+      </div>
+
+      <!-- AI Analysis Loading -->
+      <div class="ai-loading" id="aiLoading" style="display: none;">
+        <div class="ai-spinner"></div>
+        <p>🤖 Yapay zeka fotoğrafı analiz ediyor...</p>
+        <small>Bu işlem 5-10 saniye sürebilir</small>
+      </div>
+    </section>
+
+    <!-- Form Section -->
+    <section class="form-section" id="formSection" style="display: none;">
+      <h2>📝 Kontrol Kaydı</h2>
+      <form id="inspectionForm">
+        <div class="form-group">
+          <label for="kontrolTarihi">Kontrol Tarihi:</label>
+          <input type="date" id="kontrolTarihi" name="kontrolTarihi" required>
+        </div>
+
+        <div class="form-group">
+          <label for="maddeNo">Madde No:</label>
+          <input type="text" id="maddeNo" name="maddeNo" readonly>
+          <small class="helper-text">Otomatik oluşturulur</small>
+        </div>
+
+        <div class="form-group">
+          <label for="bulgular">Bulgular:</label>
+          <textarea id="bulgular" name="bulgular" required placeholder="Tespit edilen bulgular..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="alinmasiGerekenAksiyon">Alınması Gereken Aksiyon:</label>
+          <textarea id="alinmasiGerekenAksiyon" name="alinmasiGerekenAksiyon" required
+            placeholder="Gerekli aksiyonlar..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="alinanAksiyon">Alınan Aksiyon:</label>
+          <textarea id="alinanAksiyon" name="alinanAksiyon"
+            placeholder="Gerçekleştirilen aksiyonlar (opsiyonel)..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="terminTarihi">Termin Tarihi:</label>
+          <input type="date" id="terminTarihi" name="terminTarihi" required>
+        </div>
+
+        <div class="form-group">
+          <label for="durum">Durum:</label>
+          <select id="durum" name="durum" required>
+            <option value="Tamamlanmadı">Tamamlanmadı</option>
+            <option value="Tamamlandı">Tamamlandı</option>
+          </select>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="cancelBtn">❌ İptal</button>
+          <button type="submit" class="btn btn-success">💾 Kaydet</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Records Section -->
+    <section class="records-section">
+      <div class="records-header">
+        <h2>📊 Kayıtlar (<span id="recordCount">0</span>)</h2>
+        <button id="exportBtn" class="btn btn-primary">
+          📥 Excel İndir
+        </button>
+      </div>
+
+      <div id="recordsList" class="records-list">
+        <p class="empty-state">Henüz kayıt yok. Fotoğraf çekerek başlayın.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Firebase SDK (Compat Version) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+  <!-- AI Photo Analyzer -->
+  <script src="ai-analyzer.js"></script>
+
+  <!-- Excel Export Library -->
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+
+  <!-- Authentication -->
+  <script src="auth.js"></script>
+
+  <!-- Main App -->
+  <script src="app.js"></script>
+</body>
+
 </html>
