@@ -1,0 +1,32 @@
+name: Cleanup Old Records
+
+on:
+  schedule:
+    # Her gün 03:00 UTC (06:00 Istanbul saati)
+    - cron: '0 3 * * *'
+  
+  # Manuel çalıştırma için
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          cd scripts
+          npm install
+      
+      - name: Run cleanup script
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node scripts/cleanup-old-records.js

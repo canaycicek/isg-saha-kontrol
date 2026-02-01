@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -34,6 +35,7 @@
                 opacity: 0;
                 transform: translateY(-20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -128,9 +130,19 @@
         }
 
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-10px);
+            }
+
+            75% {
+                transform: translateX(10px);
+            }
         }
 
         .login-info {
@@ -147,6 +159,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="login-container">
         <div class="login-card">
@@ -159,27 +172,15 @@
 
             <form class="login-form" id="loginForm">
                 <div class="form-group">
-                    <label for="username">Kullanıcı Adı</label>
-                    <input 
-                        type="text" 
-                        id="username" 
-                        name="username" 
-                        required 
-                        autocomplete="username"
-                        placeholder="Kullanıcı adınızı girin"
-                    >
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required autocomplete="email"
+                        placeholder="Email adresinizi girin">
                 </div>
 
                 <div class="form-group">
                     <label for="password">Şifre</label>
-                    <input 
-                        type="password" 
-                        id="password" 
-                        name="password" 
-                        required 
-                        autocomplete="current-password"
-                        placeholder="Şifrenizi girin"
-                    >
+                    <input type="password" id="password" name="password" required autocomplete="current-password"
+                        placeholder="Şifrenizi girin">
                 </div>
 
                 <button type="submit" class="login-btn">
@@ -189,35 +190,62 @@
 
             <div class="login-info">
                 <strong>Demo Hesaplar:</strong><br>
-                Admin: <code>isg / isg123</code><br>
-                Teknik: <code>teknik / teknik123</code>
+                Admin: <code>isg@sahakontrol.com</code><br>
+                Teknik: <code>teknik@sahakontrol.com</code>
             </div>
         </div>
     </div>
 
-    <script src="auth.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+    <!-- Authentication -->
+    <script src="auth-firebase.js"></script>
+
+    <script type="module">
+        // Firebase Configuration (from environment variables)
+        const firebaseConfig = {
+            apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+            authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+            projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+            storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+            messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+            appId: import.meta.env.VITE_FIREBASE_APP_ID
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Initialize Auth Manager
+        const authManager = new FirebaseAuthManager();
+
+        // Make it global for the next script
+        window.authManager = authManager;
+    </script>
+
     <script>
         const loginForm = document.getElementById('loginForm');
         const errorMessage = document.getElementById('errorMessage');
 
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            const username = document.getElementById('username').value.trim();
+
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
 
             try {
-                // Attempt login
-                const user = authManager.login(username, password);
-                
+                // Attempt login with Firebase
+                await window.authManager.login(email, password);
+
                 // Success - redirect to main app
                 window.location.href = 'index.html';
-                
+
             } catch (error) {
                 // Show error message
                 errorMessage.textContent = error.message;
                 errorMessage.classList.add('show');
-                
+
                 // Hide error after 3 seconds
                 setTimeout(() => {
                     errorMessage.classList.remove('show');
@@ -226,9 +254,12 @@
         });
 
         // Check if already logged in
-        if (authManager.isLoggedIn()) {
-            window.location.href = 'index.html';
-        }
+        authManager.onAuthStateChanged((user) => {
+            if (user) {
+                window.location.href = 'index.html';
+            }
+        });
     </script>
 </body>
+
 </html>

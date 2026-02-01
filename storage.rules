@@ -1,0 +1,27 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return request.auth.token.role == 'admin';
+    }
+    
+    // Inspection photos
+    match /inspections/{userId}/{filename} {
+      // Only admins can upload photos
+      allow create: if isAdmin() && request.auth.uid == userId;
+      
+      // All authenticated users can read photos
+      allow read: if isSignedIn();
+      
+      // Only the uploader (admin) can delete
+      allow delete: if isAdmin() && request.auth.uid == userId;
+    }
+  }
+}

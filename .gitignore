@@ -40,3 +40,8 @@ node_modules/
 dist/
 *.tmp
 *.temp
+
+# Scripts - Security (⚠️ Service Account Keys)
+scripts/serviceAccountKey.json
+scripts/*-adminsdk-*.json
+scripts/node_modules/

@@ -136,18 +136,46 @@
   <!-- Firebase SDK (Compat Version) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 
   <!-- AI Photo Analyzer -->
-  <script src="ai-analyzer.js"></script>
+  <script type="module" src="ai-analyzer.js"></script>
 
   <!-- Excel Export Library -->
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
 
-  <!-- Authentication -->
-  <script src="auth.js"></script>
+  <!-- Firebase Authentication -->
+  <script src="auth-firebase.js"></script>
+
+  <script type="module">
+    // Firebase Configuration (from environment variables)
+    const firebaseConfig = {
+      apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: import.meta.env.VITE_FIREBASE_APP_ID
+    };
+
+    // Initialize Firebase (if not already initialized)
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+
+    // Initialize Auth Manager
+    const authManager = new FirebaseAuthManager();
+
+    // Make it global for app.js
+    window.authManager = authManager;
+
+    // Make Storage globally available
+    window.storage = firebase.storage();
+  </script>
 
   <!-- Main App -->
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 
 </html>

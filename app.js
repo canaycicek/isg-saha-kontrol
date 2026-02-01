@@ -1,68 +1,146 @@
 // İSG Saha Kontrol - App Logic with Firebase Firestore
 
-// Firebase Configuration (from environment variables)
-const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_FIREBASE_APP_ID
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+// Get Firebase and authManager from global scope (initialized in index.html)
 const db = firebase.firestore();
+const storage = window.storage;
 
-// Global variables
+// ===== FIREBASE STORAGE HELPERS =====
+
+// Convert base64 data URL to Blob
+function base64ToBlob(dataURL) {
+    const parts = dataURL.split(',');
+    const contentType = parts[0].match(/:(.*?);/)[1];
+    const raw = atob(parts[1]);
+    const rawLength = raw.length;
+    const uInt8Array = new Uint8Array(rawLength);
+
+    for (let i = 0; i < rawLength; ++i) {
+        uInt8Array[i] = raw.charCodeAt(i);
+    }
+
+    return new Blob([uInt8Array], { type: contentType });
+}
+
+// Upload photo to Firebase Storage
+async function uploadPhotoToStorage(photoBlob) {
+    const user = window.authManager.getCurrentUser();
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(7);
+    const filename = `inspections/${user.uid}/${timestamp}_${random}.jpg`;
+
+    // Create reference
+    const storageRef = storage.ref(filename);
+
+    // Upload with metadata
+    const metadata = {
+        contentType: 'image/jpeg',
+        customMetadata: {
+            uploadedBy: user.email,
+            uploadedAt: new Date().toISOString()
+        }
+    };
+
+    console.log('📤 Uploading photo to Storage:', filename);
+
+    // Upload
+    const snapshot = await storageRef.put(photoBlob, metadata);
+
+    // Get download URL
+    const downloadURL = await snapshot.ref.getDownloadURL();
+
+    console.log('✅ Photo uploaded, URL:', downloadURL);
+
+    return downloadURL;
+}
+
+// DOM Elements (Selected lazily or verified)
+const getEl = (id) => document.getElementById(id);
+
+// Global variables for DOM Elements
+let startCameraBtn, captureBtn, retakeBtn, cameraPreview, photoCanvas, capturedPhoto,
+    formSection, cameraSection, inspectionForm, cancelBtn, recordsList, recordCount,
+    exportExcelBtn, logoutBtn;
+
+// Initialize DOM Elements
+function initDOMElements() {
+    startCameraBtn = getEl('startCameraBtn');
+    captureBtn = getEl('captureBtn');
+    retakeBtn = getEl('retakeBtn');
+    cameraPreview = getEl('cameraPreview');
+    photoCanvas = getEl('photoCanvas');
+    capturedPhoto = getEl('capturedPhoto');
+    formSection = getEl('formSection');
+    cameraSection = getEl('cameraSection');
+    inspectionForm = getEl('inspectionForm');
+    cancelBtn = getEl('cancelBtn');
+    recordsList = getEl('recordsList');
+    recordCount = getEl('recordCount');
+    exportExcelBtn = getEl('exportExcelBtn');
+    logoutBtn = getEl('logoutBtn');
+}
+
+
+
+// Global App State
 let cameraStream = null;
 let currentPhoto = null;
 let records = [];
 let unsubscribeRecords = null;
 
-// DOM Elements
-const startCameraBtn = document.getElementById('startCameraBtn');
-const captureBtn = document.getElementById('captureBtn');
-const retakeBtn = document.getElementById('retakeBtn');
-const cameraPreview = document.getElementById('cameraPreview');
-const photoCanvas = document.getElementById('photoCanvas');
-const capturedPhoto = document.getElementById('capturedPhoto');
-const formSection = document.getElementById('formSection');
-const cameraSection = document.getElementById('cameraSection');
-const inspectionForm = document.getElementById('inspectionForm');
-const cancelBtn = document.getElementById('cancelBtn');
-const recordsList = document.getElementById('recordsList');
-const recordCount = document.getElementById('recordCount');
-const exportExcelBtn = document.getElementById('exportExcelBtn');
-const logoutBtn = document.getElementById('logoutBtn');
-
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
-    // Check authentication
-    if (!authManager.isLoggedIn()) {
-        window.location.href = 'login.html';
-        return;
-    }
-
-    // Display user info
-    displayUserInfo();
-
-    // Setup UI based on role
-    setupRoleBasedUI();
-
-    // Load records from Firestore
-    loadRecordsRealtime();
-
-    // Setup event listeners
-    setupEventListeners();
-
     // Set default dates
     setDefaultDates();
 });
 
+// ===== FIREBASE AUTH STATE LISTENER =====
+// Check if user is logged in on page load
+const startAuthListener = () => {
+    const am = window.authManager;
+    if (!am) {
+        console.warn('⚠️ authManager not ready, retrying auth listener...');
+        setTimeout(startAuthListener, 100);
+        return;
+    }
+
+    am.onAuthStateChanged((user) => {
+        console.log('📬 App auth listener received state:', user ? user.email : 'No user');
+        if (!user) {
+            console.log('🚫 No user session, redirecting to login.html');
+            const basePath = '/isg-saha-kontrol/';
+            const target = window.location.pathname.includes(basePath) ? basePath + 'login.html' : 'login.html';
+            window.location.href = target;
+            return;
+        }
+
+        // User is logged in - initialize app
+        console.log('✅ User logged in:', user.email, '| Role:', user.role);
+
+        // Initialize DOM elements now that we are on the main page
+        initDOMElements();
+
+        // Display user info
+        displayUserInfo();
+
+        // Setup UI based on role
+        setupRoleBasedUI();
+
+        // Load records from Firestore
+        loadRecordsRealtime();
+
+        // Setup event listeners
+        setupEventListeners();
+    });
+};
+
+startAuthListener();
+
+
 // Display user information in header
 function displayUserInfo() {
-    const user = authManager.getCurrentUser();
+    const user = window.authManager.getCurrentUser();
     document.getElementById('userName').textContent = user.displayName;
     const roleSpan = document.getElementById('userRole');
     roleSpan.textContent = user.role === 'admin' ? 'Admin' : 'Teknik Ekip';
@@ -71,8 +149,8 @@ function displayUserInfo() {
 
 // Setup UI based on user role
 function setupRoleBasedUI() {
-    const isAdmin = authManager.isAdmin();
-    const user = authManager.getCurrentUser();
+    const isAdmin = window.authManager.isAdmin();
+    const user = window.authManager.getCurrentUser();
 
     console.log('Setting up role-based UI for:', user);
     console.log('Is admin?', isAdmin);
@@ -97,16 +175,31 @@ function setupRoleBasedUI() {
 
 // Setup Event Listeners
 function setupEventListeners() {
+    console.log('👂 Setting up event listeners...');
+
     if (authManager.isAdmin()) {
-        startCameraBtn.addEventListener('click', startCamera);
-        captureBtn.addEventListener('click', capturePhoto);
-        retakeBtn.addEventListener('click', retakePhoto);
-        cancelBtn.addEventListener('click', cancelForm);
-        inspectionForm.addEventListener('submit', saveRecord);
+        console.log('📸 Admin detected, enabling camera listeners');
+        getEl('startCameraBtn')?.addEventListener('click', startCamera);
+        getEl('captureBtn')?.addEventListener('click', capturePhoto);
+        getEl('retakeBtn')?.addEventListener('click', retakePhoto);
+        getEl('cancelBtn')?.addEventListener('click', cancelForm);
+        getEl('inspectionForm')?.addEventListener('submit', saveRecord);
     }
 
-    exportExcelBtn.addEventListener('click', exportToExcel);
-    logoutBtn.addEventListener('click', () => authManager.logout());
+    getEl('exportExcelBtn')?.addEventListener('click', exportToExcel);
+
+    // Explicitly check if logoutBtn exists
+    const logoutBtn = getEl('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('🖱️ Logout button clicked');
+            window.authManager.logout();
+        });
+        console.log('✅ Logout button listener attached');
+    } else {
+        console.error('❌ Logout button NOT found in DOM!');
+    }
 }
 
 // Set Default Dates
@@ -231,7 +324,7 @@ async function analyzePhotoWithAI() {
         console.log('🤖 Starting AI analysis...');
 
         // Call AI analyzer
-        const result = await aiAnalyzer.analyzePhoto(currentPhoto);
+        const result = await window.aiAnalyzer.analyzePhoto(currentPhoto);
 
         console.log('✅ AI analysis complete:', result);
 
@@ -353,55 +446,92 @@ async function saveRecord(e) {
     const isDuplicate = records.some(record => record.maddeNo === maddeNo);
     const finalBulgular = isDuplicate ? `${bulgular} (Tekrar eden bulgu)` : bulgular;
 
-    const user = authManager.getCurrentUser();
+    const user = window.authManager.getCurrentUser();
 
-    const record = {
-        kontrolTarihi: document.getElementById('kontrolTarihi').value,
-        maddeNo: maddeNo,
-        bulgular: finalBulgular,
-        alinmasiGerekenAksiyon: document.getElementById('alinmasiGerekenAksiyon').value.trim(),
-        alinanAksiyon: '',
-        terminTarihi: document.getElementById('terminTarihi').value,
-        durum: document.getElementById('durum').value,
-        fotograf: currentPhoto,
-        createdBy: user.username,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedBy: user.username
-    };
+    // Get submit button for loading state
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
 
     try {
+        // Show loading indicator
+        submitBtn.disabled = true;
+        submitBtn.textContent = '📤 Fotoğraf yükleniyor...';
+
+        // Convert and upload photo to Storage
+        console.log('🔄 Converting photo to Blob...');
+        const photoBlob = base64ToBlob(currentPhoto);
+
+        console.log('📤 Uploading to Firebase Storage...');
+        const photoURL = await uploadPhotoToStorage(photoBlob);
+
+        console.log('✅ Photo URL received:', photoURL);
+
+        // Update loading text
+        submitBtn.textContent = '💾 Kayıt kaydediliyor...';
+
+        // Prepare record with photo URL
+        const record = {
+            kontrolTarihi: document.getElementById('kontrolTarihi').value,
+            maddeNo: maddeNo,
+            bulgular: finalBulgular,
+            alinmasiGerekenAksiyon: document.getElementById('alinmasiGerekenAksiyon').value.trim(),
+            alinanAksiyon: '',
+            terminTarihi: document.getElementById('terminTarihi').value,
+            durum: document.getElementById('durum').value,
+            fotograf: photoURL,  // ✅ Storage URL instead of base64
+            createdBy: user.email,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedBy: user.email
+        };
+
         // Save to Firestore
         await db.collection('inspections').add(record);
 
-        // Also save to localStorage as backup
+        // Also save to localStorage as backup (with URL, not base64)
         localStorage.setItem('isg_records', JSON.stringify([record, ...records]));
 
         resetForm();
         alert('✅ Kayıt başarıyla eklendi!');
 
     } catch (error) {
-        console.error('Save error:', error);
+        console.error('❌ Save error:', error);
         alert('❌ Kayıt eklenirken hata oluştu: ' + error.message);
+    } finally {
+        // Reset button
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
     }
 }
 
 // Render Records
 function renderRecords() {
-    if (records.length === 0) {
-        recordsList.innerHTML = '<p class="empty-state">Henüz kayıt yok. Fotoğraf çekerek başlayın.</p>';
-        exportExcelBtn.style.display = 'none';
-        recordCount.textContent = '0';
+    // Defensive checks for DOM elements
+    if (!recordsList) {
+        console.warn('⚠️ recordsList element not found, retrying...');
+        setTimeout(renderRecords, 100);
         return;
     }
 
-    recordCount.textContent = records.length;
-    exportExcelBtn.style.display = 'block';
+    if (records.length === 0) {
+        recordsList.innerHTML = '<p class="empty-state">Henüz kayıt yok. Fotoğraf çekerek başlayın.</p>';
+        if (exportExcelBtn) exportExcelBtn.style.display = 'none';
+        if (recordCount) recordCount.textContent = '0';
+        return;
+    }
 
-    const isAdmin = authManager.isAdmin();
-    const user = authManager.getCurrentUser();
+    if (recordCount) recordCount.textContent = records.length;
+    if (exportExcelBtn) exportExcelBtn.style.display = 'block';
 
-    recordsList.innerHTML = records.map(record => `
+    const isAdmin = window.authManager.isAdmin();
+    const user = window.authManager.getCurrentUser();
+
+    recordsList.innerHTML = records.map(record => {
+        // Determine if photo is base64 (old) or Storage URL (new)
+        const photoSrc = record.fotograf || '';
+        const isBase64 = photoSrc.startsWith('data:image');
+
+        return `
         <div class="record-card">
             <div class="record-header">
                 <div class="record-meta">
@@ -448,21 +578,25 @@ function renderRecords() {
             </div>
             
             <div class="record-photo" onclick="viewPhoto('${record.id}')">
-                <img src="${record.fotograf}" alt="Saha Fotoğrafı" loading="lazy">
+                ${photoSrc ? `
+                    <img src="${photoSrc}" alt="Saha Fotoğrafı" loading="lazy">
+                    ${isBase64 ? '<span class="photo-badge">💾 Yerel</span>' : '<span class="photo-badge">☁️ Cloud</span>'}
+                ` : '<p>Fotoğraf yok</p>'}
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // Update status (for technical team)
 async function updateStatus(recordId, newStatus) {
-    const user = authManager.getCurrentUser();
+    const user = window.authManager.getCurrentUser();
 
     try {
         await db.collection('inspections').doc(recordId).update({
             durum: newStatus,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            updatedBy: user.username
+            updatedBy: user.email
         });
 
         alert('✅ Durum güncellendi!');
@@ -474,7 +608,7 @@ async function updateStatus(recordId, newStatus) {
 
 // Delete Record (admin only)
 async function deleteRecord(id) {
-    if (!authManager.isAdmin()) {
+    if (!window.authManager.isAdmin()) {
         alert('❌ Bu işlem için yetkiniz yok!');
         return;
     }
@@ -489,6 +623,12 @@ async function deleteRecord(id) {
         }
     }
 }
+
+// Make functions globally accessible for inline onclick handlers
+window.deleteRecord = deleteRecord;
+window.updateStatus = updateStatus;
+window.viewPhoto = viewPhoto;
+
 
 // View Photo
 function viewPhoto(id) {
