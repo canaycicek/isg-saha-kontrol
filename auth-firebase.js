@@ -25,6 +25,22 @@ class FirebaseAuthManager {
     }
 
     /**
+     * Login with Google
+     * @returns {Promise<Object>} User object with role
+     */
+    async loginWithGoogle() {
+        try {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            const userCredential = await this.auth.signInWithPopup(provider);
+            await this.loadUserClaims();
+            return this.currentUser;
+        } catch (error) {
+            console.error('Google login error:', error);
+            throw this.getErrorMessage(error);
+        }
+    }
+
+    /**
      * Load custom claims from Firebase Auth token
      */
     async loadUserClaims() {
