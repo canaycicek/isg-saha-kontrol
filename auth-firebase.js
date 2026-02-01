@@ -47,10 +47,22 @@ class FirebaseAuthManager {
         const user = this.auth.currentUser;
         if (user) {
             const idTokenResult = await user.getIdTokenResult();
+            // Determine role safely
+            let role = idTokenResult.claims.role;
+
+            // Fallback/Override based on specific emails (Safety net if claims fail)
+            if (user.email === 'isg@canaycicek.com') {
+                role = 'admin';
+            } else if (user.email === 'teknik@canaycicek.com') {
+                role = 'technical';
+            } else if (!role) {
+                role = 'technical'; // Default for anyone else
+            }
+
             this.currentUser = {
                 uid: user.uid,
                 email: user.email,
-                role: idTokenResult.claims.role || 'technical',
+                role: role,
                 displayName: idTokenResult.claims.displayName || user.email.split('@')[0]
             };
         } else {
@@ -67,14 +79,8 @@ class FirebaseAuthManager {
             await this.auth.signOut();
             this.currentUser = null;
             console.log('👋 Sign out successful, redirecting to login.html');
+            window.location.href = 'login.html';
 
-            // Handle redirection with base path awareness
-            const basePath = '/isg-saha-kontrol/';
-            if (window.location.pathname.includes(basePath)) {
-                window.location.href = basePath + 'login.html';
-            } else {
-                window.location.href = 'login.html';
-            }
         } catch (error) {
             console.error('Logout error:', error);
             alert('Çıkış yapılırken bir hata oluştu.');

@@ -188,21 +188,30 @@ function setupEventListeners() {
 
     getEl('exportExcelBtn')?.addEventListener('click', exportToExcel);
 
-    // Explicitly check if logoutBtn exists
+    // Logout button (attached early for safety)
     const logoutBtn = getEl('logoutBtn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', (e) => {
+        // Remove existing listeners by cloning (simple way to reset)
+        const newLogoutBtn = logoutBtn.cloneNode(true);
+        logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
+
+        newLogoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            console.log('🖱️ Logout button clicked');
-            window.authManager.logout();
+            console.log('🖱️ Logout button clicked (safe mode)');
+            if (window.authManager) {
+                window.authManager.logout();
+            } else {
+                // Fallback if authManager not ready
+                firebase.auth().signOut().then(() => {
+                    window.location.href = 'login.html';
+                });
+            }
         });
-        console.log('✅ Logout button listener attached');
-    } else {
-        console.error('❌ Logout button NOT found in DOM!');
+        console.log('✅ Logout button listener attached early');
     }
 }
 
-// Set Default Dates
+// Global App State
 function setDefaultDates() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('kontrolTarihi').value = today;
@@ -298,15 +307,15 @@ function capturePhoto() {
     // Show form first
     formSection.style.display = 'block';
     formSection.scrollIntoView({ behavior: 'smooth' });
+}
 
 
-
-    // Show notification
-    function showNotification(message, type = 'info') {
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.textContent = message;
-        notification.style.cssText = `
+// Show notification
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
@@ -319,164 +328,164 @@ function capturePhoto() {
         animation: slideIn 0.3s ease-out;
     `;
 
-        document.body.appendChild(notification);
+    document.body.appendChild(notification);
 
-        setTimeout(() => {
-            notification.style.animation = 'slideOut 0.3s ease-out';
-            setTimeout(() => notification.remove(), 300);
-        }, 4000);
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => notification.remove(), 300);
+    }, 4000);
+}
+
+function retakePhoto() {
+    currentPhoto = null;
+    capturedPhoto.style.display = 'none';
+    retakeBtn.style.display = 'none';
+    startCameraBtn.style.display = 'block';
+    formSection.style.display = 'none';
+}
+
+function stopCamera() {
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
     }
+}
 
-    function retakePhoto() {
-        currentPhoto = null;
-        capturedPhoto.style.display = 'none';
-        retakeBtn.style.display = 'none';
-        startCameraBtn.style.display = 'block';
-        formSection.style.display = 'none';
+// Form Functions
+function cancelForm() {
+    if (confirm('Formu iptal etmek istediğinizden emin misiniz?')) {
+        resetForm();
     }
+}
 
-    function stopCamera() {
-        if (cameraStream) {
-            cameraStream.getTracks().forEach(track => track.stop());
-            cameraStream = null;
+function resetForm() {
+    inspectionForm.reset();
+    currentPhoto = null;
+    capturedPhoto.style.display = 'none';
+    retakeBtn.style.display = 'none';
+    startCameraBtn.style.display = 'block';
+    formSection.style.display = 'none';
+    setDefaultDates();
+    document.getElementById('maddeNo').value = '';
+}
+
+// Generate Auto Madde No
+function generateMaddeNo() {
+    let maxNo = 0;
+    records.forEach(record => {
+        const num = parseInt(record.maddeNo);
+        if (!isNaN(num) && num > maxNo) {
+            maxNo = num;
         }
+    });
+
+    const nextNo = maxNo + 1;
+    const maddeNo = String(nextNo).padStart(3, '0');
+    document.getElementById('maddeNo').value = maddeNo;
+}
+
+// Save Record to Firestore
+async function saveRecord(e) {
+    e.preventDefault();
+
+    if (!currentPhoto) {
+        alert('Lütfen önce fotoğraf çekin!');
+        return;
     }
 
-    // Form Functions
-    function cancelForm() {
-        if (confirm('Formu iptal etmek istediğinizden emin misiniz?')) {
-            resetForm();
-        }
+    const maddeNo = document.getElementById('maddeNo').value.trim();
+    const bulgular = document.getElementById('bulgular').value.trim();
+
+    // Check for duplicate
+    const isDuplicate = records.some(record => record.maddeNo === maddeNo);
+    const finalBulgular = isDuplicate ? `${bulgular} (Tekrar eden bulgu)` : bulgular;
+
+    const user = window.authManager.getCurrentUser();
+
+    // Get submit button for loading state
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+
+    try {
+        // Show loading indicator
+        submitBtn.disabled = true;
+        submitBtn.textContent = '📤 Fotoğraf yükleniyor...';
+
+        // Convert and upload photo to Storage
+        console.log('🔄 Converting photo to Blob...');
+        const photoBlob = base64ToBlob(currentPhoto);
+
+        console.log('📤 Uploading to Firebase Storage...');
+        const photoURL = await uploadPhotoToStorage(photoBlob);
+
+        console.log('✅ Photo URL received:', photoURL);
+
+        // Update loading text
+        submitBtn.textContent = '💾 Kayıt kaydediliyor...';
+
+        // Prepare record with photo URL
+        const record = {
+            kontrolTarihi: document.getElementById('kontrolTarihi').value,
+            maddeNo: maddeNo,
+            bulgular: finalBulgular,
+            alinmasiGerekenAksiyon: document.getElementById('alinmasiGerekenAksiyon').value.trim(),
+            alinanAksiyon: '',
+            terminTarihi: document.getElementById('terminTarihi').value,
+            durum: document.getElementById('durum').value,
+            fotograf: photoURL,  // ✅ Storage URL instead of base64
+            createdBy: user.email,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedBy: user.email
+        };
+
+        // Save to Firestore
+        await db.collection('inspections').add(record);
+
+        // Also save to localStorage as backup (with URL, not base64)
+        localStorage.setItem('isg_records', JSON.stringify([record, ...records]));
+
+        resetForm();
+        alert('✅ Kayıt başarıyla eklendi!');
+
+    } catch (error) {
+        console.error('❌ Save error:', error);
+        alert('❌ Kayıt eklenirken hata oluştu: ' + error.message);
+    } finally {
+        // Reset button
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+}
+
+// Render Records
+function renderRecords() {
+    // Defensive checks for DOM elements
+    if (!recordsList) {
+        console.warn('⚠️ recordsList element not found, retrying...');
+        setTimeout(renderRecords, 100);
+        return;
     }
 
-    function resetForm() {
-        inspectionForm.reset();
-        currentPhoto = null;
-        capturedPhoto.style.display = 'none';
-        retakeBtn.style.display = 'none';
-        startCameraBtn.style.display = 'block';
-        formSection.style.display = 'none';
-        setDefaultDates();
-        document.getElementById('maddeNo').value = '';
+    if (records.length === 0) {
+        recordsList.innerHTML = '<p class="empty-state">Henüz kayıt yok. Fotoğraf çekerek başlayın.</p>';
+        if (exportExcelBtn) exportExcelBtn.style.display = 'none';
+        if (recordCount) recordCount.textContent = '0';
+        return;
     }
 
-    // Generate Auto Madde No
-    function generateMaddeNo() {
-        let maxNo = 0;
-        records.forEach(record => {
-            const num = parseInt(record.maddeNo);
-            if (!isNaN(num) && num > maxNo) {
-                maxNo = num;
-            }
-        });
+    if (recordCount) recordCount.textContent = records.length;
+    if (exportExcelBtn) exportExcelBtn.style.display = 'block';
 
-        const nextNo = maxNo + 1;
-        const maddeNo = String(nextNo).padStart(3, '0');
-        document.getElementById('maddeNo').value = maddeNo;
-    }
+    const isAdmin = window.authManager.isAdmin();
+    const user = window.authManager.getCurrentUser();
 
-    // Save Record to Firestore
-    async function saveRecord(e) {
-        e.preventDefault();
+    recordsList.innerHTML = records.map(record => {
+        // Determine if photo is base64 (old) or Storage URL (new)
+        const photoSrc = record.fotograf || '';
+        const isBase64 = photoSrc.startsWith('data:image');
 
-        if (!currentPhoto) {
-            alert('Lütfen önce fotoğraf çekin!');
-            return;
-        }
-
-        const maddeNo = document.getElementById('maddeNo').value.trim();
-        const bulgular = document.getElementById('bulgular').value.trim();
-
-        // Check for duplicate
-        const isDuplicate = records.some(record => record.maddeNo === maddeNo);
-        const finalBulgular = isDuplicate ? `${bulgular} (Tekrar eden bulgu)` : bulgular;
-
-        const user = window.authManager.getCurrentUser();
-
-        // Get submit button for loading state
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        const originalText = submitBtn.textContent;
-
-        try {
-            // Show loading indicator
-            submitBtn.disabled = true;
-            submitBtn.textContent = '📤 Fotoğraf yükleniyor...';
-
-            // Convert and upload photo to Storage
-            console.log('🔄 Converting photo to Blob...');
-            const photoBlob = base64ToBlob(currentPhoto);
-
-            console.log('📤 Uploading to Firebase Storage...');
-            const photoURL = await uploadPhotoToStorage(photoBlob);
-
-            console.log('✅ Photo URL received:', photoURL);
-
-            // Update loading text
-            submitBtn.textContent = '💾 Kayıt kaydediliyor...';
-
-            // Prepare record with photo URL
-            const record = {
-                kontrolTarihi: document.getElementById('kontrolTarihi').value,
-                maddeNo: maddeNo,
-                bulgular: finalBulgular,
-                alinmasiGerekenAksiyon: document.getElementById('alinmasiGerekenAksiyon').value.trim(),
-                alinanAksiyon: '',
-                terminTarihi: document.getElementById('terminTarihi').value,
-                durum: document.getElementById('durum').value,
-                fotograf: photoURL,  // ✅ Storage URL instead of base64
-                createdBy: user.email,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                updatedBy: user.email
-            };
-
-            // Save to Firestore
-            await db.collection('inspections').add(record);
-
-            // Also save to localStorage as backup (with URL, not base64)
-            localStorage.setItem('isg_records', JSON.stringify([record, ...records]));
-
-            resetForm();
-            alert('✅ Kayıt başarıyla eklendi!');
-
-        } catch (error) {
-            console.error('❌ Save error:', error);
-            alert('❌ Kayıt eklenirken hata oluştu: ' + error.message);
-        } finally {
-            // Reset button
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
-        }
-    }
-
-    // Render Records
-    function renderRecords() {
-        // Defensive checks for DOM elements
-        if (!recordsList) {
-            console.warn('⚠️ recordsList element not found, retrying...');
-            setTimeout(renderRecords, 100);
-            return;
-        }
-
-        if (records.length === 0) {
-            recordsList.innerHTML = '<p class="empty-state">Henüz kayıt yok. Fotoğraf çekerek başlayın.</p>';
-            if (exportExcelBtn) exportExcelBtn.style.display = 'none';
-            if (recordCount) recordCount.textContent = '0';
-            return;
-        }
-
-        if (recordCount) recordCount.textContent = records.length;
-        if (exportExcelBtn) exportExcelBtn.style.display = 'block';
-
-        const isAdmin = window.authManager.isAdmin();
-        const user = window.authManager.getCurrentUser();
-
-        recordsList.innerHTML = records.map(record => {
-            // Determine if photo is base64 (old) or Storage URL (new)
-            const photoSrc = record.fotograf || '';
-            const isBase64 = photoSrc.startsWith('data:image');
-
-            return `
+        return `
         <div class="record-card">
             <div class="record-header">
                 <div class="record-meta">
@@ -530,57 +539,57 @@ function capturePhoto() {
             </div>
         </div>
         `;
-        }).join('');
+    }).join('');
+}
+
+// Update status (for technical team)
+async function updateStatus(recordId, newStatus) {
+    const user = window.authManager.getCurrentUser();
+
+    try {
+        await db.collection('inspections').doc(recordId).update({
+            durum: newStatus,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedBy: user.email
+        });
+
+        alert('✅ Durum güncellendi!');
+    } catch (error) {
+        console.error('Update error:', error);
+        alert('❌ Güncelleme hatası: ' + error.message);
+    }
+}
+
+// Delete Record (admin only)
+async function deleteRecord(id) {
+    if (!window.authManager.isAdmin()) {
+        alert('❌ Bu işlem için yetkiniz yok!');
+        return;
     }
 
-    // Update status (for technical team)
-    async function updateStatus(recordId, newStatus) {
-        const user = window.authManager.getCurrentUser();
-
+    if (confirm('Bu kaydı silmek istediğinizden emin misiniz?')) {
         try {
-            await db.collection('inspections').doc(recordId).update({
-                durum: newStatus,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                updatedBy: user.email
-            });
-
-            alert('✅ Durum güncellendi!');
+            await db.collection('inspections').doc(id).delete();
+            alert('✅ Kayıt silindi!');
         } catch (error) {
-            console.error('Update error:', error);
-            alert('❌ Güncelleme hatası: ' + error.message);
+            console.error('Delete error:', error);
+            alert('❌ Silme hatası: ' + error.message);
         }
     }
+}
 
-    // Delete Record (admin only)
-    async function deleteRecord(id) {
-        if (!window.authManager.isAdmin()) {
-            alert('❌ Bu işlem için yetkiniz yok!');
-            return;
-        }
-
-        if (confirm('Bu kaydı silmek istediğinizden emin misiniz?')) {
-            try {
-                await db.collection('inspections').doc(id).delete();
-                alert('✅ Kayıt silindi!');
-            } catch (error) {
-                console.error('Delete error:', error);
-                alert('❌ Silme hatası: ' + error.message);
-            }
-        }
-    }
-
-    // Make functions globally accessible for inline onclick handlers
-    window.deleteRecord = deleteRecord;
-    window.updateStatus = updateStatus;
-    window.viewPhoto = viewPhoto;
+// Make functions globally accessible for inline onclick handlers
+window.deleteRecord = deleteRecord;
+window.updateStatus = updateStatus;
+window.viewPhoto = viewPhoto;
 
 
-    // View Photo
-    function viewPhoto(id) {
-        const record = records.find(r => r.id === id);
-        if (record) {
-            const win = window.open('', '_blank');
-            win.document.write(`
+// View Photo
+function viewPhoto(id) {
+    const record = records.find(r => r.id === id);
+    if (record) {
+        const win = window.open('', '_blank');
+        win.document.write(`
             <!DOCTYPE html>
             <html>
             <head>
@@ -595,147 +604,147 @@ function capturePhoto() {
             </body>
             </html>
         `);
-        }
+    }
+}
+
+// Date Formatting
+function formatDate(dateStr) {
+    if (!dateStr) return '-';
+    const [year, month, day] = dateStr.split('-');
+    return `${day}.${month}.${year}`;
+}
+
+// Excel Export
+async function exportToExcel() {
+    if (records.length === 0) {
+        alert('Dışa aktarılacak kayıt yok!');
+        return;
     }
 
-    // Date Formatting
-    function formatDate(dateStr) {
-        if (!dateStr) return '-';
-        const [year, month, day] = dateStr.split('-');
-        return `${day}.${month}.${year}`;
-    }
+    const btn = document.getElementById('exportExcelBtn');
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ Hazırlanıyor...';
+    btn.disabled = true;
 
-    // Excel Export
-    async function exportToExcel() {
-        if (records.length === 0) {
-            alert('Dışa aktarılacak kayıt yok!');
-            return;
-        }
+    try {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Saha Kontrol');
 
-        const btn = document.getElementById('exportExcelBtn');
-        const originalText = btn.textContent;
-        btn.textContent = '⏳ Hazırlanıyor...';
-        btn.disabled = true;
+        worksheet.columns = [
+            { header: 'No', key: 'no', width: 10 },
+            { header: 'Kontrol Tarihi', key: 'kontrolTarihi', width: 15 },
+            { header: 'Termin Tarihi', key: 'terminTarihi', width: 15 },
+            { header: 'Bulgu', key: 'bulgu', width: 50 },
+            { header: 'Çekilen Fotoğraf', key: 'fotograf', width: 25 },
+            { header: 'Alınması Gereken Aksiyon', key: 'alinmasiGerekenAksiyon', width: 40 },
+            { header: 'Alınan Aksiyon', key: 'alinanAksiyon', width: 40 },
+            { header: 'Durum', key: 'durum', width: 15 }
+        ];
 
-        try {
-            const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet('Saha Kontrol');
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF4A90E2' }
+        };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+        headerRow.height = 25;
 
-            worksheet.columns = [
-                { header: 'No', key: 'no', width: 10 },
-                { header: 'Kontrol Tarihi', key: 'kontrolTarihi', width: 15 },
-                { header: 'Termin Tarihi', key: 'terminTarihi', width: 15 },
-                { header: 'Bulgu', key: 'bulgu', width: 50 },
-                { header: 'Çekilen Fotoğraf', key: 'fotograf', width: 25 },
-                { header: 'Alınması Gereken Aksiyon', key: 'alinmasiGerekenAksiyon', width: 40 },
-                { header: 'Alınan Aksiyon', key: 'alinanAksiyon', width: 40 },
-                { header: 'Durum', key: 'durum', width: 15 }
-            ];
-
-            const headerRow = worksheet.getRow(1);
-            headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-            headerRow.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FF4A90E2' }
+        records.forEach((record, index) => {
+            const rowData = {
+                no: record.maddeNo,
+                kontrolTarihi: formatDate(record.kontrolTarihi),
+                terminTarihi: formatDate(record.terminTarihi),
+                bulgu: record.bulgular,
+                fotograf: '',
+                alinmasiGerekenAksiyon: record.alinmasiGerekenAksiyon,
+                alinanAksiyon: record.alinanAksiyon,
+                durum: record.durum
             };
-            headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
-            headerRow.height = 25;
 
-            records.forEach((record, index) => {
-                const rowData = {
-                    no: record.maddeNo,
-                    kontrolTarihi: formatDate(record.kontrolTarihi),
-                    terminTarihi: formatDate(record.terminTarihi),
-                    bulgu: record.bulgular,
-                    fotograf: '',
-                    alinmasiGerekenAksiyon: record.alinmasiGerekenAksiyon,
-                    alinanAksiyon: record.alinanAksiyon,
-                    durum: record.durum
+            const row = worksheet.addRow(rowData);
+            row.height = 120;
+            row.alignment = { vertical: 'top', wrapText: true };
+
+            if (record.fotograf) {
+                try {
+                    const base64Data = record.fotograf.split(',')[1];
+                    const imageId = workbook.addImage({
+                        base64: base64Data,
+                        extension: 'jpeg',
+                    });
+
+                    worksheet.addImage(imageId, {
+                        tl: { col: 4, row: index + 1 },
+                        br: { col: 5, row: index + 2 },
+                        editAs: 'oneCell'
+                    });
+                } catch (err) {
+                    console.error('Photo add error:', err);
+                    row.getCell('fotograf').value = 'Var';
+                }
+            }
+
+            const durumCell = row.getCell('durum');
+            if (record.durum === 'Tamamlandı') {
+                durumCell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FF2ECC71' }
                 };
+                durumCell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+            } else {
+                durumCell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFE74C3C' }
+                };
+                durumCell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+            }
+            durumCell.alignment = { vertical: 'middle', horizontal: 'center' };
+        });
 
-                const row = worksheet.addRow(rowData);
-                row.height = 120;
-                row.alignment = { vertical: 'top', wrapText: true };
-
-                if (record.fotograf) {
-                    try {
-                        const base64Data = record.fotograf.split(',')[1];
-                        const imageId = workbook.addImage({
-                            base64: base64Data,
-                            extension: 'jpeg',
-                        });
-
-                        worksheet.addImage(imageId, {
-                            tl: { col: 4, row: index + 1 },
-                            br: { col: 5, row: index + 2 },
-                            editAs: 'oneCell'
-                        });
-                    } catch (err) {
-                        console.error('Photo add error:', err);
-                        row.getCell('fotograf').value = 'Var';
-                    }
-                }
-
-                const durumCell = row.getCell('durum');
-                if (record.durum === 'Tamamlandı') {
-                    durumCell.fill = {
-                        type: 'pattern',
-                        pattern: 'solid',
-                        fgColor: { argb: 'FF2ECC71' }
-                    };
-                    durumCell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
-                } else {
-                    durumCell.fill = {
-                        type: 'pattern',
-                        pattern: 'solid',
-                        fgColor: { argb: 'FFE74C3C' }
-                    };
-                    durumCell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
-                }
-                durumCell.alignment = { vertical: 'middle', horizontal: 'center' };
+        worksheet.eachRow((row) => {
+            row.eachCell((cell) => {
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
             });
+        });
 
-            worksheet.eachRow((row) => {
-                row.eachCell((cell) => {
-                    cell.border = {
-                        top: { style: 'thin' },
-                        left: { style: 'thin' },
-                        bottom: { style: 'thin' },
-                        right: { style: 'thin' }
-                    };
-                });
-            });
+        const today = new Date();
+        const filename = `ISG_Saha_Kontrol_${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}.xlsx`;
 
-            const today = new Date();
-            const filename = `ISG_Saha_Kontrol_${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}.xlsx`;
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
-            const buffer = await workbook.xlsx.writeBuffer();
-            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        window.URL.revokeObjectURL(url);
 
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            a.click();
-            window.URL.revokeObjectURL(url);
+        btn.textContent = originalText;
+        btn.disabled = false;
 
-            btn.textContent = originalText;
-            btn.disabled = false;
+        alert('✅ Excel dosyası başarıyla indirildi!');
 
-            alert('✅ Excel dosyası başarıyla indirildi!');
-
-        } catch (error) {
-            console.error('Excel creation error:', error);
-            alert('❌ Excel oluşturulurken hata oluştu: ' + error.message);
-            btn.textContent = originalText;
-            btn.disabled = false;
-        }
+    } catch (error) {
+        console.error('Excel creation error:', error);
+        alert('❌ Excel oluşturulurken hata oluştu: ' + error.message);
+        btn.textContent = originalText;
+        btn.disabled = false;
     }
+}
 
-    // Cleanup on page unload
-    window.addEventListener('beforeunload', () => {
-        if (unsubscribeRecords) {
-            unsubscribeRecords();
-        }
-    });
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    if (unsubscribeRecords) {
+        unsubscribeRecords();
+    }
+});
